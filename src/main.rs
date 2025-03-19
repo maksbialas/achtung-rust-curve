@@ -1,79 +1,11 @@
+mod display;
+mod player;
+mod settings;
+
+use display::Display;
+use player::Player;
 use rand::Rng;
-use std::fmt;
-
-const NUM_PLAYERS: usize = 6;
-const SCREEN_H: usize = 64;
-const SCREEN_W: usize = 64;
-
-struct Display([[u8; SCREEN_H]; SCREEN_W]);
-
-impl Display {
-    fn empty() -> Self {
-        Display([[0; SCREEN_H]; SCREEN_W])
-    }
-
-    fn display_players(&mut self, player_states: &[PlayerState; NUM_PLAYERS]) {
-        for state in player_states {
-            self.0[state.position.0][state.position.1] = state.player.clone().into();
-        }
-    }
-}
-
-impl fmt::Debug for Display {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "\n┌{}┐", "-".repeat(SCREEN_W))?;
-        for row in &self.0 {
-            write!(f, "|")?;
-            for &cell in row {
-                let str = if cell == 0 {
-                    " ".to_string() // Return a space if the value is 0
-                } else {
-                    cell.to_string() // Otherwise, convert the u8 to a string
-                };
-                write!(f, "{str}")?;
-            }
-            writeln!(f, "|")?;
-        }
-        writeln!(f, "└{}┘", "-".repeat(SCREEN_W))?;
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone)]
-enum Player {
-    Fred,
-    Greenlee,
-    Pinkney,
-    Bluebell,
-    Willem,
-    Greydon,
-}
-
-impl Player {
-    fn all_players() -> [Self; NUM_PLAYERS] {
-        [
-            Self::Fred,
-            Self::Greenlee,
-            Self::Pinkney,
-            Self::Bluebell,
-            Self::Willem,
-            Self::Greydon,
-        ]
-    }
-}
-
-impl Into<u8> for Player {
-    fn into(self) -> u8 {
-        match self {
-            Self::Fred => 1,
-            Self::Greenlee => 2,
-            Self::Pinkney => 3,
-            Self::Bluebell => 4,
-            Self::Willem => 5,
-            Self::Greydon => 6,
-        }
-    }
-}
+use settings::{NUM_PLAYERS, SCREEN_H, SCREEN_W};
 
 #[derive(Debug)]
 enum MoveDirection {
@@ -110,6 +42,7 @@ struct PlayerState {
     player: Player,
     direction: MoveDirection,
     position: Position,
+    alive: bool,
 }
 
 impl PlayerState {
@@ -118,6 +51,7 @@ impl PlayerState {
             player,
             direction: MoveDirection::random(),
             position: Position::random(),
+            alive: true,
         }
     }
 
@@ -126,6 +60,7 @@ impl PlayerState {
     }
 
     fn tick(&mut self) {
+        // TODO handle overflow
         match self.direction {
             MoveDirection::Up => self.position.1 += 1,
             MoveDirection::Down => self.position.1 -= 1,
@@ -154,9 +89,7 @@ impl Achtung {
     }
 
     fn tick(&mut self) {
-        for state in &mut self.player_states {
-            state.tick();
-        }
+        self.player_states.iter_mut().for_each(|s| s.tick());
         self.display.display_players(&self.player_states);
     }
 }
